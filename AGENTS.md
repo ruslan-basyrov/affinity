@@ -166,17 +166,17 @@ Follow Obsidian's **Developer Policies** and **Plugin Guidelines**. In particula
 
 ```ts
 import { Plugin } from 'obsidian';
-import { MySettings, DEFAULT_SETTINGS } from './settings';
+import { AffinitySettings, DEFAULT_SETTINGS } from './settings';
 import { registerCommands } from './commands';
 
-export default class MyPlugin extends Plugin {
-	settings!: MySettings;
+export default class AffinityPlugin extends Plugin {
+	settings!: AffinitySettings;
 
 	async onload() {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MySettings>,
+			(await this.loadData()) as Partial<AffinitySettings>,
 		);
 		registerCommands(this);
 	}
@@ -186,12 +186,12 @@ export default class MyPlugin extends Plugin {
 **settings.ts**:
 
 ```ts
-export interface MySettings {
+export interface AffinitySettings {
 	enabled: boolean;
 	apiKey: string;
 }
 
-export const DEFAULT_SETTINGS: MySettings = {
+export const DEFAULT_SETTINGS: AffinitySettings = {
 	enabled: true,
 	apiKey: '',
 };
@@ -225,11 +225,11 @@ this.addCommand({
 ### Persist settings
 
 ```ts
-interface MySettings { enabled: boolean }
-const DEFAULT_SETTINGS: MySettings = { enabled: true };
+interface AffinitySettings { enabled: boolean }
+const DEFAULT_SETTINGS: AffinitySettings = { enabled: true };
 
 async onload() {
-  this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<MySettings>);
+  this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData() as Partial<AffinitySettings>);
   await this.saveData(this.settings);
 }
 ```
