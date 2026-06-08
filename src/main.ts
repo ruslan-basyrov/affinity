@@ -1,13 +1,10 @@
+import { Plugin, WorkspaceLeaf } from 'obsidian';
 import {
-	Plugin,
-} from 'obsidian';
-import {
-	DEFAULT_SETTINGS,
 	AffinitySettings,
 	AffinitySettingTab,
+	normalizeSettings,
 } from './settings';
-
-// Remember to rename these classes and interfaces!
+import { AFFINITY_CHAT_VIEW, AffinityChatView } from './view';
 
 export default class AffinityPlugin extends Plugin {
 	settings!: AffinitySettings;
@@ -15,22 +12,45 @@ export default class AffinityPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
-		// This creates an icon in the left ribbon.
-		this.addRibbonIcon('message-square', 'Open chat (Affinity)', (_evt: MouseEvent) => {
+		this.registerView(
+			AFFINITY_CHAT_VIEW,
+			(leaf) => new AffinityChatView(leaf, this),
+		);
+
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- "Affinity" is the plugin name
+		this.addRibbonIcon('message-square', 'Open chat (Affinity)', () => {
+			void this.activateView();
 		});
 
-		// This adds a settings tab so the user can configure various aspects of the plugin
+		this.addCommand({
+			id: 'open-chat',
+			name: 'Open chat',
+			callback: () => void this.activateView(),
+		});
+
 		this.addSettingTab(new AffinitySettingTab(this.app, this));
 	}
 
 	onunload() {}
 
+	async activateView() {
+		const { workspace } = this.app;
+
+		let leaf: WorkspaceLeaf | null =
+			workspace.getLeavesOfType(AFFINITY_CHAT_VIEW)[0] ?? null;
+
+		if (!leaf) {
+			leaf = workspace.getRightLeaf(false);
+			await leaf?.setViewState({ type: AFFINITY_CHAT_VIEW, active: true });
+		}
+
+		if (leaf) {
+			await workspace.revealLeaf(leaf);
+		}
+	}
+
 	async loadSettings() {
-		this.settings = Object.assign(
-			{},
-			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<AffinitySettings>,
-		);
+		this.settings = normalizeSettings(await this.loadData());
 	}
 
 	async saveSettings() {
