@@ -1,6 +1,6 @@
 {
 	"name": "affinity",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"description": "Chat",
 	"author": "Ruslan Basyrov",
 	"main": "main.js",

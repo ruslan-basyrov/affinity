@@ -1,12 +1,14 @@
 import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
 import AffinityPlugin from './main';
-import { ChatMessage, createProvider } from './providers';
+import { ChatMessage, createProvider, PROVIDERS, ProviderId } from './providers';
 
 export const AFFINITY_CHAT_VIEW = 'affinity-chat-view';
 
 export class AffinityChatView extends ItemView {
 	plugin: AffinityPlugin;
 	private messages: ChatMessage[] = [];
+	private providerSelect!: HTMLSelectElement;
+	private modelSelect!: HTMLSelectElement;
 	private messagesEl!: HTMLElement;
 	private inputEl!: HTMLTextAreaElement;
 	private sendButton!: HTMLButtonElement;
@@ -33,6 +35,30 @@ export class AffinityChatView extends ItemView {
 		const root = this.contentEl;
 		root.empty();
 		root.addClass('affinity-chat');
+
+		const pickerRow = root.createDiv({ cls: 'affinity-chat-picker-row' });
+		this.providerSelect = pickerRow.createEl('select', {
+			cls: 'affinity-chat-picker dropdown',
+		});
+		this.modelSelect = pickerRow.createEl('select', {
+			cls: 'affinity-chat-picker dropdown',
+		});
+
+		this.registerDomEvent(this.providerSelect, 'change', () => {
+			const value = this.providerSelect.value;
+			this.plugin.settings.activeProvider = value ? (value as ProviderId) : null;
+			// A model from another provider no longer applies.
+			this.plugin.settings.activeModel = null;
+			void this.plugin.saveSettings();
+			this.populateModels();
+		});
+		this.registerDomEvent(this.modelSelect, 'change', () => {
+			this.plugin.settings.activeModel = this.modelSelect.value || null;
+			void this.plugin.saveSettings();
+		});
+
+		this.populateProviders();
+		this.populateModels();
 
 		this.messagesEl = root.createDiv({ cls: 'affinity-chat-messages' });
 
@@ -61,11 +87,58 @@ export class AffinityChatView extends ItemView {
 		this.contentEl.empty();
 	}
 
+	private populateProviders(): void {
+		const select = this.providerSelect;
+		select.empty();
+		select.createEl('option', { text: 'Select provider…', value: '' });
+		for (const info of Object.values(PROVIDERS)) {
+			select.createEl('option', { text: info.name, value: info.id });
+		}
+		select.value = this.plugin.settings.activeProvider ?? '';
+	}
+
+	private populateModels(): void {
+		const select = this.modelSelect;
+		select.empty();
+
+		const id = this.plugin.settings.activeProvider;
+		const models = id
+			? this.plugin.settings.providers[id].models.filter((m) => m.trim())
+			: [];
+
+		if (!id) {
+			select.createEl('option', { text: 'Select a provider first', value: '' });
+			select.disabled = true;
+			select.value = '';
+			return;
+		}
+		if (models.length === 0) {
+			select.createEl('option', { text: 'No models — add in settings', value: '' });
+			select.disabled = true;
+			select.value = '';
+			return;
+		}
+
+		select.disabled = false;
+		select.createEl('option', { text: 'Select model…', value: '' });
+		for (const model of models) {
+			select.createEl('option', { text: model, value: model });
+		}
+		const active = this.plugin.settings.activeModel;
+		select.value = active && models.includes(active) ? active : '';
+	}
+
 	private async send(): Promise<void> {
 		if (this.sending) return;
 		const text = this.inputEl.value.trim();
 		if (!text) {
 			this.inputEl.value = '';
+			return;
+		}
+
+		const { activeProvider, activeModel } = this.plugin.settings;
+		if (!activeProvider || !activeModel) {
+			new Notice('Pick a provider and model above the chat first.');
 			return;
 		}
 

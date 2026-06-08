@@ -29,10 +29,19 @@ export const PROVIDERS: Record<ProviderId, ProviderInfo> = {
 	},
 };
 
-/** Build the chat provider for the currently selected backend. */
+/** Build the chat provider for the provider/model chosen in the chat. */
 export function createProvider(settings: AffinitySettings): ChatProvider {
-	const info = PROVIDERS[settings.activeProvider];
-	const config = settings.providers[settings.activeProvider];
+	const id = settings.activeProvider;
+	if (!id) {
+		throw new Error('No provider selected. Pick one above the chat.');
+	}
+
+	const info = PROVIDERS[id];
+	const config = settings.providers[id];
+	const model = settings.activeModel ?? config.models[0];
+	if (!model) {
+		throw new Error(`No model selected for ${info.name}. Pick one above the chat.`);
+	}
 
 	// Every provider here speaks the OpenAI-compatible protocol; a provider
 	// with a different API (e.g. Anthropic's messages endpoint) would branch
@@ -41,6 +50,6 @@ export function createProvider(settings: AffinitySettings): ChatProvider {
 		label: info.name,
 		baseUrl: config.baseUrl || info.defaultBaseUrl,
 		apiKey: config.apiKey,
-		model: config.model || info.defaultModel,
+		model,
 	});
 }

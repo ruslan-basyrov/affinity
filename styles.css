@@ -5,6 +5,18 @@
 	gap: var(--size-4-2);
 }
 
+.affinity-chat-picker-row {
+	display: flex;
+	gap: var(--size-4-2);
+	padding: var(--size-4-2);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.affinity-chat-picker {
+	flex: 1 1 0;
+	min-width: 0;
+}
+
 .affinity-chat-messages {
 	flex: 1 1 auto;
 	overflow-y: auto;
