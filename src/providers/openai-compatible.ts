@@ -1,8 +1,8 @@
 import { requestUrl } from 'obsidian';
-import { ChatMessage, ChatProvider } from './types';
+import { ChatMessage, ChatProvider, ChatReply } from './types';
 
 interface ChatCompletionResponse {
-	choices?: { message?: { content?: string } }[];
+	choices?: { message?: { content?: string; reasoning?: string } }[];
 	error?: { message?: string };
 }
 
@@ -22,7 +22,7 @@ export interface OpenAICompatibleConfig {
 export class OpenAICompatibleProvider implements ChatProvider {
 	constructor(private readonly config: OpenAICompatibleConfig) {}
 
-	async chat(messages: ChatMessage[]): Promise<string> {
+	async chat(messages: ChatMessage[]): Promise<ChatReply> {
 		const { label, baseUrl, apiKey, model } = this.config;
 
 		if (!apiKey) {
@@ -36,7 +36,12 @@ export class OpenAICompatibleProvider implements ChatProvider {
 			headers: {
 				Authorization: `Bearer ${apiKey}`,
 			},
-			body: JSON.stringify({ model, messages }),
+			// Only role/content go upstream; a prior turn's reasoning trace is
+			// for display, not part of the conversation we send back.
+			body: JSON.stringify({
+				model,
+				messages: messages.map(({ role, content }) => ({ role, content })),
+			}),
 			// We handle non-2xx ourselves so we can show a useful message.
 			throw: false,
 		});
@@ -48,10 +53,14 @@ export class OpenAICompatibleProvider implements ChatProvider {
 			throw new Error(`${label} request failed: ${detail}`);
 		}
 
-		const content = data?.choices?.[0]?.message?.content;
-		if (typeof content !== 'string') {
+		const message = data?.choices?.[0]?.message;
+		if (typeof message?.content !== 'string') {
 			throw new Error(`Unexpected response from ${label} (no message content).`);
 		}
-		return content;
+		const reasoning =
+			typeof message.reasoning === 'string' && message.reasoning.trim()
+				? message.reasoning
+				: undefined;
+		return { content: message.content, reasoning };
 	}
 }

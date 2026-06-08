@@ -156,7 +156,11 @@ export class AffinityChatView extends ItemView {
 		try {
 			const provider = createProvider(this.plugin.settings);
 			const reply = await provider.chat(this.messages);
-			this.messages.push({ role: 'assistant', content: reply });
+			this.messages.push({
+				role: 'assistant',
+				content: reply.content,
+				reasoning: reply.reasoning,
+			});
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			new Notice(message);
@@ -194,7 +198,21 @@ export class AffinityChatView extends ItemView {
 			const el = this.messagesEl.createDiv({
 				cls: `affinity-chat-message ${cls}`,
 			});
-			el.setText(message.content);
+			// Collapsed reasoning trace, shown above the answer when present.
+			if (message.role === 'assistant' && message.reasoning) {
+				const details = el.createEl('details', {
+					cls: 'affinity-chat-reasoning',
+				});
+				details.createEl('summary', {
+					cls: 'affinity-chat-reasoning-summary',
+					text: 'Thinking',
+				});
+				details.createDiv({
+					cls: 'affinity-chat-reasoning-body',
+					text: message.reasoning,
+				});
+			}
+			el.createDiv({ cls: 'affinity-chat-text', text: message.content });
 		}
 		this.messagesEl.scrollTop = this.messagesEl.scrollHeight;
 	}

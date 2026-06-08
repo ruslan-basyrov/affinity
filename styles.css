@@ -55,6 +55,33 @@
 	color: var(--text-muted);
 }
 
+.affinity-chat-reasoning {
+	margin-bottom: var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.affinity-chat-reasoning-summary {
+	cursor: pointer;
+	list-style: none;
+	color: var(--text-muted);
+}
+
+.affinity-chat-reasoning-summary::before {
+	content: '▸ ';
+}
+
+.affinity-chat-reasoning[open] .affinity-chat-reasoning-summary::before {
+	content: '▾ ';
+}
+
+.affinity-chat-reasoning-body {
+	margin-top: var(--size-4-1);
+	padding-left: var(--size-4-2);
+	border-left: 2px solid var(--background-modifier-border);
+	color: var(--text-faint);
+}
+
 .affinity-chat-input-row {
 	display: flex;
 	gap: var(--size-4-2);
